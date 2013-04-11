@@ -9,8 +9,12 @@
 * python-setuptools
 * python 2.7
 * lxml
+
+and for tests:
+
 * nose
 * expecter
+* dingus
 
 ### Non-Python packages
 
