@@ -2,6 +2,8 @@
 
 **pysamlsp** is a Python library for implementing a Service Provider within a SAML2.0 SSO environment.
 
+This package is under active development but is currently incomplete. Please don't try to use it.
+
 ## Requirements
 
 ### Python packages
