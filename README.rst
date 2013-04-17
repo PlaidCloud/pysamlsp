@@ -43,25 +43,21 @@ In the meantime you can clone this repository and run ```python setup.py install
 
 ## Use
 
+Initialize the class with a configuration dictionary:
+
 ```
-cp_config = dict(
-
-)
+sp_config = dict( tbd )
 sp = Pysamlsp(sp_config)
-
 ...
-
 redirect_url = sp.redirect_for_idp()
-
 ...
-
 saml_response = query['SAMLResponse']
 valid = sp.idp_response_is_valid(saml_response)
 if valid:
   ...
 ```
 
-### If you're signing your AuthnRequests
+### Signed AuthnRequests
 
 If you are signing your AuthnRequests, you'll need an RSA private a public key pair. Here is a procedure for creating the keys using openssl.
 
