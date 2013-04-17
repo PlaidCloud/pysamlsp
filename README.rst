@@ -45,7 +45,7 @@ In the meantime you can clone this repository and run ```python setup.py install
 cp_config = dict(
 
 )
-sp = pysamlsp(sp_config)
+sp = Pysamlsp(sp_config)
 
 ...
 
