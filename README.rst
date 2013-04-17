@@ -59,6 +59,28 @@ if valid:
   ...
 ```
 
+### If you're signing your AuthnRequests
+
+If you are signing your AuthnRequests, you'll need an RSA private a public key pair. Here is a procedure for creating the keys using openssl.
+
+Create a private key:
+
+```
+openssl req -x509 -days 3650 -newkey rsa:1024 -keyout saml_key_pw.pem -out saml.crt
+```
+
+Remove the password from your new key:
+
+```
+openssl rsa -in saml_key_pw.pem -out saml_key.pem
+```
+
+Create a public key from the private key:
+
+```
+openssl rsa -in saml_key.pem -pubout > saml.pub
+```
+
 ## Example application
 
 To be determined
