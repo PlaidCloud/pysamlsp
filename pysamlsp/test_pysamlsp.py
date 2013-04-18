@@ -99,3 +99,23 @@ class TestAuthnSignedRequest(unittest.TestCase):
     expect(len(ar.xpath( "//ds:SignatureValue",
         namespaces = {'ds': 'http://www.w3.org/2000/09/xmldsig#'}))) > 0
 
+class TestGzipAndBase64(unittest.TestCase):
+  def test_gzip_and_base64(self):
+    expect(
+      base64decode_and_gunzip(
+        gzip_and_base64encode("<root>Test</root>")
+      )
+    ) == "<root>Test</root>"
+
+class TestRedirectForIdP(unittest.TestCase):
+  def test_redirect(self):
+    sp = Pysamlsp({
+      'assertion_consumer_service_url': 'http://localhost',
+      'signed': True,
+      'public_key': 'support/saml.pub',
+      'private_key': 'support/saml_key.pem'
+    })
+    expect(
+      sp.redirect_for_idp().\
+        startswith('http://localhost?SAMLRequest=')) == True
+

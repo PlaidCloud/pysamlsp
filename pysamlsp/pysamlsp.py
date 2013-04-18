@@ -1,5 +1,8 @@
 import os
+import base64
+import zlib
 import uuid
+import urllib
 from sh import xmlsec1
 from datetime import datetime
 from lxml import etree
@@ -29,6 +32,12 @@ XML_SIGNATURE_FRAGMENT = """
 def iso_no_microseconds(dt):
   return(datetime.isoformat(dt.replace(microsecond = 0)))
 
+def gzip_and_base64encode(data):
+  return base64.b64encode(zlib.compress(data))
+
+def base64decode_and_gunzip(data):
+  return zlib.decompress(base64.b64decode(data))
+
 class Pysamlsp(object):
   def __init__(self, config = {}):
     self.ID = uuid.uuid4().hex
@@ -38,6 +47,7 @@ class Pysamlsp(object):
     self.issuer = config.get('issuer') or ''
     self.private_key = config.get('private_key') or ''
     self.public_key = config.get('public_key') or ''
+    self.signed = config.get('signed') or False
   def samlp_maker(self):
     return ElementMaker(
       namespace='urn:oasis:names:tc:SAML:2.0:protocol',
@@ -87,4 +97,15 @@ class Pysamlsp(object):
         tempfile)
     os.remove(tempfile)
     return signed.stdout
+  def redirect_for_idp(self):
+    if self.signed:
+      authnrequest = self.authnrequest_signed()
+    else:
+      authnrequest = self.authnrequest_as_string()
+    return "%s?%s" % (
+      self.assertion_consumer_service_url,
+      urllib.urlencode(
+        [('SAMLRequest', gzip_and_base64encode(authnrequest))]
+      )
+    )
 
