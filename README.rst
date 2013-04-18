@@ -49,42 +49,34 @@ In the meantime you can clone this repository and run ```python setup.py install
 Usage
 _____
 
-Initialize the class with a configuration dictionary:
+Initialize the class with a configuration dictionary::
 
-```
-sp_config = dict( tbd )
-sp = Pysamlsp(sp_config)
-...
-redirect_url = sp.redirect_for_idp()
-...
-saml_response = query['SAMLResponse']
-valid = sp.idp_response_is_valid(saml_response)
-if valid:
-  ...
-```
+    sp_config = dict( tbd )
+    sp = Pysamlsp(sp_config)
+    ...
+    redirect_url = sp.redirect_for_idp()
+    ...
+    saml_response = query['SAMLResponse']
+    valid = sp.idp_response_is_valid(saml_response)
+    if valid:
+      ...
 
 Signed AuthnRequests
 ====================
 
 If you are signing your AuthnRequests, you'll need an RSA private a public key pair. Here is a procedure for creating the keys using openssl.
 
-Create a private key:
+Create a private key::
 
-```
-openssl req -x509 -days 3650 -newkey rsa:1024 -keyout saml_key_pw.pem -out saml.crt
-```
+    openssl req -x509 -days 3650 -newkey rsa:1024 -keyout saml_key_pw.pem -out saml.crt
 
-Remove the password from your new key:
+Remove the password from your new key::
 
-```
-openssl rsa -in saml_key_pw.pem -out saml_key.pem
-```
+    openssl rsa -in saml_key_pw.pem -out saml_key.pem
 
-Create a public key from the private key:
+Create a public key from the private key::
 
-```
-openssl rsa -in saml_key.pem -pubout > saml.pub
-```
+    openssl rsa -in saml_key.pem -pubout > saml.pub
 
 Example application
 ___________________
