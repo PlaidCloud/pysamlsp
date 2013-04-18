@@ -85,6 +85,6 @@ class Pysamlsp(object):
         '--privkey-pem', self.private_key,
         '--pubkey-pem', self.public_key,
         tempfile)
-    #os.remove(tempfile)
+    os.remove(tempfile)
     return signed.stdout
 
