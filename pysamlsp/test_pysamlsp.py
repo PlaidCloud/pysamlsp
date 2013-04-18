@@ -93,8 +93,7 @@ class TestAuthnRequestToSign(unittest.TestCase):
 
 class TestAuthnSignedRequest(unittest.TestCase):
   def test_signed_element(self):
-    sp = Pysamlsp({'public_key': 'support/saml.pub',
-      'private_key': 'support/saml_key.pem'})
+    sp = Pysamlsp({'private_key': 'support/saml_key.pem'})
     ar = etree.fromstring(sp.authnrequest_signed())
     expect(len(ar.xpath( "//ds:SignatureValue",
         namespaces = {'ds': 'http://www.w3.org/2000/09/xmldsig#'}))) > 0
@@ -111,8 +110,7 @@ class TestRedirectForIdP(unittest.TestCase):
   def test_redirect(self):
     sp = Pysamlsp({
       'assertion_consumer_service_url': 'http://localhost',
-      'signed': True,
-      'public_key': 'support/saml.pub',
+      'sign_authnrequests': True,
       'private_key': 'support/saml_key.pem'
     })
     expect(
@@ -185,7 +183,7 @@ class TestSAMLResponse(unittest.TestCase):
     sp = Pysamlsp()
     expect(sp.check_not_on_or_after_date('2020-12-31T00:00:00')) == True
     expect(sp.check_not_on_or_after_date('2012-12-31T00:00:00')) == False
-  def xest_user_is_valid(self):
+  def test_user_is_valid(self):
     sp = Pysamlsp({'certificate': 'support/saml.crt'})
     expect(sp.user_is_valid(TEST_SAML_RESPONSE)) == True
     expect(sp.user_is_valid('<unsigned />')) == False

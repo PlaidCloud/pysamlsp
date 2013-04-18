@@ -53,9 +53,8 @@ class Pysamlsp(object):
     ) or ''
     self.issuer = config.get('issuer') or ''
     self.private_key = config.get('private_key') or ''
-    self.public_key = config.get('public_key') or ''
+    self.sign_authnrequests = config.get('sign_authnrequests') or False
     self.certificate = config.get('certificate') or ''
-    self.signed = config.get('signed') or False
   def samlp_maker(self):
     return ElementMaker(
       namespace='urn:oasis:names:tc:SAML:2.0:protocol',
@@ -101,12 +100,11 @@ class Pysamlsp(object):
     signed = xmlsec1(
       '--sign',
       '--privkey-pem', self.private_key,
-      '--pubkey-pem', self.public_key,
       tempfile)
     os.remove(tempfile)
     return signed.stdout
   def redirect_for_idp(self):
-    if self.signed:
+    if self.sign_authnrequests:
       authnrequest = self.authnrequest_signed()
     else:
       authnrequest = self.authnrequest_as_string()
@@ -136,10 +134,15 @@ class Pysamlsp(object):
     return (verified.exit_code == 0 and 
         verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0)
   def user_is_valid(self, saml_response):
-    response = etree.fromstring(saml_response)
-    condition = response.xpath(
-      '/samlp:Response/saml:Assertion/saml:Conditions',
-      namespaces = { 'saml': 'urn:oasis:names:tc:SAML:2.0:assertion'})[0]
+    response = etree.fromstring(saml_response.strip())
+    try:
+      condition = response.xpath(
+        '/samlp:Response/saml:Assertion/saml:Conditions',
+        namespaces = {
+          'saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
+          'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'})[0]
+    except: 
+      return False
     return (
       self.check_not_before_date(
         condition.attrib.get('NotBefore', '2012-12-31T00:00:00')) and
@@ -147,6 +150,3 @@ class Pysamlsp(object):
         condition.attrib.get('NotOnOrAfter', None)) and
       self.verify_signature(saml_response)
     )
-
-
-
