@@ -38,13 +38,13 @@ and maybe (to be confirmed)
 Installation
 ____________
 
-At this point in development, I have not uploaded to Pypi. Once I have, installation will be as easy as:
+At this point in development, I have not uploaded to Pypi. Once I have, installation will be as easy as::
 
-```
-pip install pysqlsp
-```
+    pip install pysqlsp
 
-In the meantime you can clone this repository and run ```python setup.py install```.
+In the meantime you can clone this repository and run::
+
+    python setup.py install
 
 Usage
 _____
