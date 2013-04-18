@@ -38,6 +38,13 @@ def gzip_and_base64encode(data):
 def base64decode_and_gunzip(data):
   return zlib.decompress(base64.b64decode(data))
 
+class SAMLValidationError(Exception):
+  """SAML Validation Error"""
+  def __init__(self, msg):
+    self._msg = msg
+  def __str__(self):
+    return '%s: %s' % (self.__doc__, self._msg)
+
 class Pysamlsp(object):
   def __init__(self, config = {}):
     self.ID = uuid.uuid4().hex
@@ -47,6 +54,7 @@ class Pysamlsp(object):
     self.issuer = config.get('issuer') or ''
     self.private_key = config.get('private_key') or ''
     self.public_key = config.get('public_key') or ''
+    self.certificate = config.get('certificate') or ''
     self.signed = config.get('signed') or False
   def samlp_maker(self):
     return ElementMaker(
@@ -91,10 +99,10 @@ class Pysamlsp(object):
     with open(tempfile, 'w') as fh:
       fh.write(self.authnrequest_to_sign())
     signed = xmlsec1(
-        '--sign',
-        '--privkey-pem', self.private_key,
-        '--pubkey-pem', self.public_key,
-        tempfile)
+      '--sign',
+      '--privkey-pem', self.private_key,
+      '--pubkey-pem', self.public_key,
+      tempfile)
     os.remove(tempfile)
     return signed.stdout
   def redirect_for_idp(self):
@@ -108,4 +116,37 @@ class Pysamlsp(object):
         [('SAMLRequest', gzip_and_base64encode(authnrequest))]
       )
     )
+  def check_not_before_date(self, when):
+    return datetime.strptime(when, '%Y-%m-%dT%H:%M:%S') < datetime.utcnow()
+  def check_not_on_or_after_date(self, when):
+    return datetime.strptime(when, '%Y-%m-%dT%H:%M:%S') >= datetime.utcnow()
+  def verify_signature(self, saml_response):
+    tempfile = '/tmp/' + self.ID
+    with open(tempfile, 'w') as fh:
+      fh.write(saml_response.strip())
+    try:
+      verified = xmlsec1(
+        '--verify',
+        '--pubkey-cert-pem', self.certificate,
+        tempfile)
+    except:
+      return False
+    finally:
+      os.remove(tempfile)
+    return (verified.exit_code == 0 and 
+        verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0)
+  def user_is_valid(self, saml_response):
+    response = etree.fromstring(saml_response)
+    condition = response.xpath(
+      '/samlp:Response/saml:Assertion/saml:Conditions',
+      namespaces = { 'saml': 'urn:oasis:names:tc:SAML:2.0:assertion'})[0]
+    return (
+      self.check_not_before_date(
+        condition.attrib.get('NotBefore', '2012-12-31T00:00:00')) and
+      self.check_not_on_or_after_date(
+        condition.attrib.get('NotOnOrAfter', None)) and
+      self.verify_signature(saml_response)
+    )
+
+
 

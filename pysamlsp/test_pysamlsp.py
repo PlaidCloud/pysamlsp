@@ -119,3 +119,73 @@ class TestRedirectForIdP(unittest.TestCase):
       sp.redirect_for_idp().\
         startswith('http://localhost?SAMLRequest=')) == True
 
+TEST_SAML_RESPONSE = """
+<?xml version="1.0"?>
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="identifier_2" InResponseTo="identifier_1" Version="2.0" IssueInstant="2004-12-05T09:22:05" Destination="https://sp.example.com/SAML2/SSO/POST">
+  <saml:Issuer>https://idp.example.org/SAML2</saml:Issuer>
+  <samlp:Status>
+    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </samlp:Status>
+  <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="identifier_3" Version="2.0" IssueInstant="2004-12-05T09:22:05">
+    <saml:Issuer>https://idp.example.org/SAML2</saml:Issuer>
+    <saml:Subject>
+      <saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress">
+        test@tartansolutions.com
+      </saml:NameID>
+      <saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+        <saml:SubjectConfirmationData InResponseTo="identifier_1" Recipient="https://sp.example.com/SAML2/SSO/POST" NotOnOrAfter="2020-01-01T00:00:00"/>
+      </saml:SubjectConfirmation>
+    </saml:Subject>
+    <saml:Conditions NotBefore="2012-12-31T00:00:00" NotOnOrAfter="2020-01-01T00:00:00">
+      <saml:AudienceRestriction>
+        <saml:Audience>https://sp.example.com/SAML2</saml:Audience>
+      </saml:AudienceRestriction>
+    </saml:Conditions>
+    <saml:AuthnStatement AuthnInstant="2014-01-01T00:00:00" SessionIndex="identifier_3">
+      <saml:AuthnContext>
+        <saml:AuthnContextClassRef>
+          urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+       </saml:AuthnContextClassRef>
+      </saml:AuthnContext>
+    </saml:AuthnStatement>
+  </saml:Assertion>
+  <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    <ds:SignedInfo> 
+      <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/> 
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+      <ds:Reference>
+        <ds:Transforms> 
+          <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/> 
+          <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/> 
+        </ds:Transforms> 
+        <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/> 
+        <ds:DigestValue>J808KVy8DLuU6ZxXgDVKWdFbycY=</ds:DigestValue> 
+      </ds:Reference> 
+    </ds:SignedInfo> 
+    <ds:SignatureValue>Y4nz6gK+JP02+qOKHbrIpCly5ZePG9UHXADuiwWMsyIJUPEnVnu7hpI930KA16SB
+0lrWMOzG4UFggBq483CHfwlfwGCtRYKmh/OIW6pb/jGwBDpusY6Po6lELgxzpds9
+wWBYz9550bDtIdZaM5sjLVruPox/LbwAa3Qo9Q6hCu0=</ds:SignatureValue> 
+    <ds:KeyInfo> 
+      <ds:X509Data/> 
+    </ds:KeyInfo> 
+  </ds:Signature>
+</samlp:Response>
+"""
+
+class TestSAMLResponse(unittest.TestCase):
+  def test_signature_verification(self):
+    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    expect(sp.verify_signature(TEST_SAML_RESPONSE)) == True
+    expect(sp.verify_signature('<unsigned />')) == False
+  def test_not_before_date_check(self):
+    sp = Pysamlsp()
+    expect(sp.check_not_before_date('2012-12-31T00:00:00')) == True
+    expect(sp.check_not_before_date('2022-12-31T00:00:00')) == False
+  def test_not_on_or_after_date_check(self):
+    sp = Pysamlsp()
+    expect(sp.check_not_on_or_after_date('2020-12-31T00:00:00')) == True
+    expect(sp.check_not_on_or_after_date('2012-12-31T00:00:00')) == False
+  def xest_user_is_valid(self):
+    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    expect(sp.user_is_valid(TEST_SAML_RESPONSE)) == True
+    expect(sp.user_is_valid('<unsigned />')) == False
