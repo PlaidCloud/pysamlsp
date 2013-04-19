@@ -83,7 +83,3 @@ Create a public key from the private key. You'll need this for metadata::
 
     openssl rsa -in saml_key.pem -pubout > saml.pub
 
-Example application
-___________________
-
-To be determined
