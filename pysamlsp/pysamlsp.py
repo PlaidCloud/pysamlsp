@@ -121,7 +121,7 @@ class Pysamlsp(object):
   def verify_signature(self, saml_response):
     tempfile = '/tmp/' + self.ID
     with open(tempfile, 'w') as fh:
-      fh.write(saml_response.strip())
+      fh.write(base64.b64decode(saml_response).strip())
     try:
       verified = xmlsec1(
         '--verify',
@@ -134,7 +134,7 @@ class Pysamlsp(object):
     return (verified.exit_code == 0 and 
         verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0)
   def user_is_valid(self, saml_response):
-    response = etree.fromstring(saml_response.strip())
+    response = etree.fromstring(base64.b64decode(saml_response).strip())
     try:
       condition = response.xpath(
         '/samlp:Response/saml:Assertion/saml:Conditions',

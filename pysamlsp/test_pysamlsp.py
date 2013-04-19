@@ -3,6 +3,7 @@ from expecter import expect
 from datetime import datetime
 from lxml import etree
 import string
+import base64
 from pysamlsp import *
 
 def setUpmodule():
@@ -117,7 +118,7 @@ class TestRedirectForIdP(unittest.TestCase):
       sp.redirect_for_idp().\
         startswith('http://localhost?SAMLRequest=')) == True
 
-TEST_SAML_RESPONSE = """
+TEST_SAML_RESPONSE = base64.b64encode("""
 <?xml version="1.0"?>
 <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="identifier_2" InResponseTo="identifier_1" Version="2.0" IssueInstant="2004-12-05T09:22:05" Destination="https://sp.example.com/SAML2/SSO/POST">
   <saml:Issuer>https://idp.example.org/SAML2</saml:Issuer>
@@ -168,13 +169,15 @@ wWBYz9550bDtIdZaM5sjLVruPox/LbwAa3Qo9Q6hCu0=</ds:SignatureValue>
     </ds:KeyInfo> 
   </ds:Signature>
 </samlp:Response>
-"""
+""")
+
+TEST_NONSENSE_RESPONSE = base64.b64encode('<nonsense />')
 
 class TestSAMLResponse(unittest.TestCase):
   def test_signature_verification(self):
     sp = Pysamlsp({'certificate': 'support/saml.crt'})
     expect(sp.verify_signature(TEST_SAML_RESPONSE)) == True
-    expect(sp.verify_signature('<unsigned />')) == False
+    expect(sp.verify_signature(TEST_NONSENSE_RESPONSE)) == False
   def test_not_before_date_check(self):
     sp = Pysamlsp()
     expect(sp.check_not_before_date('2012-12-31T00:00:00')) == True
@@ -186,4 +189,4 @@ class TestSAMLResponse(unittest.TestCase):
   def test_user_is_valid(self):
     sp = Pysamlsp({'certificate': 'support/saml.crt'})
     expect(sp.user_is_valid(TEST_SAML_RESPONSE)) == True
-    expect(sp.user_is_valid('<unsigned />')) == False
+    expect(sp.user_is_valid(TEST_NONSENSE_RESPONSE)) == False
