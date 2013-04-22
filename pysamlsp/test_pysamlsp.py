@@ -135,7 +135,7 @@ TEST_SAML_RESPONSE = base64.b64encode("""
         <saml:SubjectConfirmationData InResponseTo="identifier_1" Recipient="https://sp.example.com/SAML2/SSO/POST" NotOnOrAfter="2020-01-01T00:00:00"/>
       </saml:SubjectConfirmation>
     </saml:Subject>
-    <saml:Conditions NotBefore="2012-12-31T00:00:00" NotOnOrAfter="2020-01-01T00:00:00">
+    <saml:Conditions NotBefore="2012-12-31T00:00:00Z" NotOnOrAfter="2020-01-01T00:00:00Z">
       <saml:AudienceRestriction>
         <saml:Audience>https://sp.example.com/SAML2</saml:Audience>
       </saml:AudienceRestriction>
@@ -158,12 +158,12 @@ TEST_SAML_RESPONSE = base64.b64encode("""
           <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/> 
         </ds:Transforms> 
         <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/> 
-        <ds:DigestValue>J808KVy8DLuU6ZxXgDVKWdFbycY=</ds:DigestValue> 
+        <ds:DigestValue>u1HBARnk8EV8ZAxThfa2WCu4tkI=</ds:DigestValue> 
       </ds:Reference> 
     </ds:SignedInfo> 
-    <ds:SignatureValue>Y4nz6gK+JP02+qOKHbrIpCly5ZePG9UHXADuiwWMsyIJUPEnVnu7hpI930KA16SB
-0lrWMOzG4UFggBq483CHfwlfwGCtRYKmh/OIW6pb/jGwBDpusY6Po6lELgxzpds9
-wWBYz9550bDtIdZaM5sjLVruPox/LbwAa3Qo9Q6hCu0=</ds:SignatureValue> 
+    <ds:SignatureValue>ZBCJqzmgELzOcS6HlY102s5i/Qa53/siPOMJjTOH68L5X5CcCxwF9JYWHqd0eXwd
+TJ4V3tOHjX6vp5KF3DvptxS3g4GUxS2+5t1qZzNczNSZKPyNs/spFBwETSgGZxY3
+cNOHd7tRERQ0y+cgyGFrpoxLmG5CedjABvMFhrmeYw4=</ds:SignatureValue> 
     <ds:KeyInfo> 
       <ds:X509Data/> 
     </ds:KeyInfo> 
@@ -174,19 +174,25 @@ wWBYz9550bDtIdZaM5sjLVruPox/LbwAa3Qo9Q6hCu0=</ds:SignatureValue>
 TEST_NONSENSE_RESPONSE = base64.b64encode('<nonsense />')
 
 class TestSAMLResponse(unittest.TestCase):
-  def test_signature_verification(self):
+  def test_signature_verifies(self):
     sp = Pysamlsp({'certificate': 'support/saml.crt'})
-    expect(sp.verify_signature(TEST_SAML_RESPONSE)) == True
-    expect(sp.verify_signature(TEST_NONSENSE_RESPONSE)) == False
+    expect(sp.verify_signature(TEST_SAML_RESPONSE)) == None
+  def test_signature_doesnt_verify(self):
+    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    with expect.raises():
+      sp.verify_signature(TEST_NONSENSE_RESPONSE)
   def test_not_before_date_check(self):
     sp = Pysamlsp()
-    expect(sp.check_not_before_date('2012-12-31T00:00:00')) == True
-    expect(sp.check_not_before_date('2022-12-31T00:00:00')) == False
+    expect(sp.check_not_before_date('2012-12-31T00:00:00Z')) == True
+    expect(sp.check_not_before_date('2022-12-31T00:00:00Z')) == False
   def test_not_on_or_after_date_check(self):
     sp = Pysamlsp()
-    expect(sp.check_not_on_or_after_date('2020-12-31T00:00:00')) == True
-    expect(sp.check_not_on_or_after_date('2012-12-31T00:00:00')) == False
+    expect(sp.check_not_on_or_after_date('2020-12-31T00:00:00Z')) == True
+    expect(sp.check_not_on_or_after_date('2012-12-31T00:00:00Z')) == False
   def test_user_is_valid(self):
     sp = Pysamlsp({'certificate': 'support/saml.crt'})
-    expect(sp.user_is_valid(TEST_SAML_RESPONSE)) == True
-    expect(sp.user_is_valid(TEST_NONSENSE_RESPONSE)) == False
+    expect(sp.user_is_valid(TEST_SAML_RESPONSE)) == 'test@tartansolutions.com'
+  def test_user_is_invalid(self):
+    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    with expect.raises(SAMLNameIDError):
+      sp.user_is_valid(TEST_NONSENSE_RESPONSE)

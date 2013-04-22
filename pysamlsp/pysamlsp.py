@@ -40,7 +40,21 @@ def base64decode_and_gunzip(data):
   return zlib.decompress(base64.b64decode(data))
 
 class SAMLValidationError(Exception):
-  """SAML Validation Error"""
+  """SAML signature not validated"""
+  def __init__(self, msg):
+    self._msg = msg
+  def __str__(self):
+    return '%s: %s' % (self.__doc__, self._msg)
+
+class SAMLConditionError(Exception):
+  """SAML Condition not met"""
+  def __init__(self, msg):
+    self._msg = msg
+  def __str__(self):
+    return '%s: %s' % (self.__doc__, self._msg)
+
+class SAMLNameIDError(Exception):
+  """SAML NameID error"""
   def __init__(self, msg):
     self._msg = msg
   def __str__(self):
@@ -117,9 +131,9 @@ class Pysamlsp(object):
       )
     )
   def check_not_before_date(self, when):
-    return datetime.strptime(when, '%Y-%m-%dT%H:%M:%S') < datetime.utcnow()
+    return datetime.strptime(when, '%Y-%m-%dT%H:%M:%SZ') < datetime.utcnow()
   def check_not_on_or_after_date(self, when):
-    return datetime.strptime(when, '%Y-%m-%dT%H:%M:%S') >= datetime.utcnow()
+    return datetime.strptime(when, '%Y-%m-%dT%H:%M:%SZ') >= datetime.utcnow()
   def response_as_xml(self, saml_response):
     parser = etree.XMLParser(remove_blank_text = True)
     response = etree.parse(StringIO(base64.b64decode(saml_response)), parser)
@@ -134,13 +148,23 @@ class Pysamlsp(object):
         '--pubkey-cert-pem', self.certificate,
         tempfile)
     except:
-      return False
+      raise
     finally:
-      os.remove(tempfile)
-    return (verified.exit_code == 0 and 
-        verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0)
+      pass
+      #os.remove(tempfile)
+    if not (verified.exit_code == 0 and 
+        verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0):
+      raise SAMLValidationError('xmlsec1 error: %s' % verified.stderr)
   def user_is_valid(self, saml_response):
     response = etree.fromstring(base64.b64decode(saml_response).strip())
+    try:
+      nameid = response.xpath(
+        '//saml:NameID',
+        namespaces = {
+          'saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
+          'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'})[0]
+    except: 
+      raise SAMLNameIDError('NameID not given')
     try:
       condition = response.xpath(
         '/samlp:Response/saml:Assertion/saml:Conditions',
@@ -148,11 +172,12 @@ class Pysamlsp(object):
           'saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
           'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'})[0]
     except: 
-      return False
-    return (
-      self.check_not_before_date(
-        condition.attrib.get('NotBefore', '2012-12-31T00:00:00')) and
-      self.check_not_on_or_after_date(
-        condition.attrib.get('NotOnOrAfter', None)) and
-      self.verify_signature(saml_response)
-    )
+      raise SAMLConditionError('Conditions not given in response')
+    if not self.check_not_before_date(
+        condition.attrib.get('NotBefore', '2012-12-31T00:00:00Z')):
+      raise SAMLConditionError('NotBefore condition not met')
+    if not self.check_not_on_or_after_date(
+        condition.attrib.get('NotOnOrAfter', None)):
+      raise SAMLConditionError('NotOnOrAfter condition not met')
+    self.verify_signature(saml_response)
+    return nameid.text.strip()
