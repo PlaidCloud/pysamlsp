@@ -146,6 +146,8 @@ class Pysamlsp(object):
       verified = xmlsec1(
         '--verify',
         '--pubkey-cert-pem', self.certificate,
+        '--store-references',
+        '--id-attr:ID', 'urn:oasis:names:tc:SAML:2.0:assertion:Assertion',
         tempfile)
     except:
       raise
