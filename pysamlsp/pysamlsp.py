@@ -1,4 +1,5 @@
 import os
+from StringIO import StringIO
 import base64
 import zlib
 import uuid
@@ -119,6 +120,10 @@ class Pysamlsp(object):
     return datetime.strptime(when, '%Y-%m-%dT%H:%M:%S') < datetime.utcnow()
   def check_not_on_or_after_date(self, when):
     return datetime.strptime(when, '%Y-%m-%dT%H:%M:%S') >= datetime.utcnow()
+  def response_as_xml(self, saml_response):
+    parser = etree.XMLParser(remove_blank_text = True)
+    response = etree.parse(StringIO(base64.b64decode(saml_response)), parser)
+    return etree.tostring(response, pretty_print = True)
   def verify_signature(self, saml_response):
     tempfile = '/tmp/' + self.ID
     with open(tempfile, 'w') as fh:
