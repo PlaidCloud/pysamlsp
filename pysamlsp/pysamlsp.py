@@ -108,8 +108,9 @@ class Pysamlsp(object):
       authnrequest = self.authnrequest_signed()
     else:
       authnrequest = self.authnrequest_as_string()
-    return "%s?%s" % (
+    return "%s%s%s" % (
       self.assertion_consumer_service_url,
+      '&' if self.assertion_consumer_service_url.find('?') > 0 else '?',
       urllib.urlencode(
         [('SAMLRequest', gzip_and_base64encode(authnrequest))]
       )
