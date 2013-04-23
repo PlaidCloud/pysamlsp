@@ -118,6 +118,11 @@ class TestRedirectForIdP(unittest.TestCase):
       sp.redirect_for_idp().\
         startswith('http://localhost?SAMLRequest=')) == True
 
+# This test response must be signed each time it is changed. To sign it,
+# find the file under support and change it there. Then pass it to xmlsec:
+#   xmlsec1 --sign --pubkey-pem saml.pub --privkey-pem saml_key.pem \
+#     samlresponse.xml > samlresponse_signed.xml
+# Copy the contents of samlresponse_signed.xml to the block below.
 TEST_SAML_RESPONSE = base64.b64encode("""
 <?xml version="1.0"?>
 <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="identifier_2" InResponseTo="identifier_1" Version="2.0" IssueInstant="2004-12-05T09:22:05" Destination="https://sp.example.com/SAML2/SSO/POST">
