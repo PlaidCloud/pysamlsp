@@ -7,7 +7,7 @@ setup(
   author = "Rob Martin @version2beta",
   author_email = "rob@version2beta.com",
   description = "A service provider implementation for SAML2.0.",
-  long_description = open('README.md').read(),
+  long_description = open('README.rst').read(),
   license = "LICENSE.txt",
   keywords = "saml service provider",
   packages = ['pysamlsp'],
