@@ -160,7 +160,7 @@ class Pysamlsp(object):
   def user_is_valid(self, saml_response):
     response = etree.fromstring(base64.b64decode(saml_response).strip())
     try:
-      nameid = response.xpath(
+      (nameid,) = response.xpath(
         '//saml:NameID',
         namespaces = {
           'saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
