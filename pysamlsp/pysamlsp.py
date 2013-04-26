@@ -11,22 +11,22 @@ from lxml.builder import ElementMaker
 
 XML_SIGNATURE_FRAGMENT = """
 <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-  <ds:SignedInfo> 
-    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/> 
+  <ds:SignedInfo>
+    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
     <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
     <ds:Reference>
-      <ds:Transforms> 
-        <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/> 
-        <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/> 
-      </ds:Transforms> 
-      <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/> 
-      <ds:DigestValue /> 
-    </ds:Reference> 
-  </ds:SignedInfo> 
-  <ds:SignatureValue /> 
-  <ds:KeyInfo> 
-    <ds:X509Data /> 
-  </ds:KeyInfo> 
+      <ds:Transforms>
+        <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+        <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      </ds:Transforms>
+      <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+      <ds:DigestValue />
+    </ds:Reference>
+  </ds:SignedInfo>
+  <ds:SignatureValue />
+  <ds:KeyInfo>
+    <ds:X509Data />
+  </ds:KeyInfo>
 </ds:Signature>
 """
 
@@ -154,18 +154,18 @@ class Pysamlsp(object):
     finally:
       pass
       #os.remove(tempfile)
-    if not (verified.exit_code == 0 and 
+    if not (verified.exit_code == 0 and
         verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0):
       raise SAMLValidationError('xmlsec1 error: %s' % verified.stderr)
   def user_is_valid(self, saml_response):
     response = etree.fromstring(base64.b64decode(saml_response).strip())
     try:
-      (nameid,) = response.xpath(
+      nameid = response.xpath(
         '//saml:NameID',
         namespaces = {
           'saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
           'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'})[0]
-    except: 
+    except:
       raise SAMLNameIDError('NameID not given')
     try:
       condition = response.xpath(
@@ -173,7 +173,7 @@ class Pysamlsp(object):
         namespaces = {
           'saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
           'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'})[0]
-    except: 
+    except:
       raise SAMLConditionError('Conditions not given in response')
     if not self.check_not_before_date(
         condition.attrib.get('NotBefore', '2012-12-31T00:00:00Z')):
