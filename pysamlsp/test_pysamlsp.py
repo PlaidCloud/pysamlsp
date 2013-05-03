@@ -94,7 +94,7 @@ class TestAuthnRequestToSign(unittest.TestCase):
 
 class TestAuthnSignedRequest(unittest.TestCase):
   def test_signed_element(self):
-    sp = Pysamlsp({'private_key': 'support/saml_key.pem'})
+    sp = Pysamlsp({'private_key': os.path.dirname(os.path.abspath(__file__)) + '/support/saml_key.pem'})
     ar = etree.fromstring(sp.authnrequest_signed())
     expect(len(ar.xpath( "//ds:SignatureValue",
         namespaces = {'ds': 'http://www.w3.org/2000/09/xmldsig#'}))) > 0
@@ -112,7 +112,7 @@ class TestRedirectForIdP(unittest.TestCase):
     sp = Pysamlsp({
       'assertion_consumer_service_url': 'http://localhost',
       'sign_authnrequests': True,
-      'private_key': 'support/saml_key.pem'
+      'private_key': os.path.dirname(os.path.abspath(__file__)) + '/support/saml_key.pem'
     })
     expect(
       sp.redirect_for_idp().\
@@ -180,10 +180,10 @@ TEST_NONSENSE_RESPONSE = base64.b64encode('<nonsense />')
 
 class TestSAMLResponse(unittest.TestCase):
   def test_signature_verifies(self):
-    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    sp = Pysamlsp({'certificate': os.path.dirname(os.path.abspath(__file__)) + '/support/saml.crt'})
     expect(sp.verify_signature(TEST_SAML_RESPONSE)) == None
   def test_signature_doesnt_verify(self):
-    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    sp = Pysamlsp({'certificate': os.path.dirname(os.path.abspath(__file__)) + '/support/saml.crt'})
     with expect.raises():
       sp.verify_signature(TEST_NONSENSE_RESPONSE)
   def test_not_before_date_check(self):
@@ -195,9 +195,9 @@ class TestSAMLResponse(unittest.TestCase):
     expect(sp.check_not_on_or_after_date('2020-12-31T00:00:00Z')) == True
     expect(sp.check_not_on_or_after_date('2012-12-31T00:00:00Z')) == False
   def test_user_is_valid(self):
-    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    sp = Pysamlsp({'certificate': os.path.dirname(os.path.abspath(__file__)) + '/support/saml.crt'})
     expect(sp.user_is_valid(TEST_SAML_RESPONSE)) == 'test@tartansolutions.com'
   def test_user_is_invalid(self):
-    sp = Pysamlsp({'certificate': 'support/saml.crt'})
+    sp = Pysamlsp({'certificate': os.path.dirname(os.path.abspath(__file__)) + '/support/saml.crt'})
     with expect.raises(SAMLNameIDError):
       sp.user_is_valid(TEST_NONSENSE_RESPONSE)
