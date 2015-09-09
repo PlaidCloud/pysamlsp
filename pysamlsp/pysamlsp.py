@@ -130,8 +130,7 @@ class Pysamlsp(object):
 
     def authnrequest_to_sign(self):
         authnrequest_to_sign = self.authnrequest()
-        authnrequest_to_sign.append(
-            etree.fromstring(XML_SIGNATURE_FRAGMENT))
+        authnrequest_to_sign.append(etree.fromstring(XML_SIGNATURE_FRAGMENT))
         return etree.tostring(authnrequest_to_sign)
 
     def authnrequest_signed(self):
