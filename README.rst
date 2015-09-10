@@ -32,13 +32,10 @@ Non-Python packages
 Installation
 ____________
 
-At this point in development, I have not uploaded to Pypi. Once I have, installation will be as easy as::
+Just run:
 
-    pip install pysqlsp
+    pip install pysamlsp
 
-In the meantime you can clone this repository and run::
-
-    python setup.py install
 
 Usage
 _____
