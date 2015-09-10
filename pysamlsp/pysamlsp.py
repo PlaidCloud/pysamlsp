@@ -79,6 +79,7 @@ class SAMLNameIDError(Exception):
 class Pysamlsp(object):
 
     def __init__(self, config={}):
+        # Generate a unique ID
         self.ID = uuid.uuid4().hex
         self.assertion_consumer_service_url = config.get(
             'assertion_consumer_service_url'
@@ -87,6 +88,12 @@ class Pysamlsp(object):
         self.private_key = config.get('private_key') or ''
         self.sign_authnrequests = config.get('sign_authnrequests') or False
         self.certificate = config.get('certificate') or ''
+
+        # Allow specification of the private key and cert
+        # as strings so they can be passed into the object
+        # rather than needing to be permanent files.
+        self.certificate_str = config.get('certificate_str') or ''
+        self.private_key_str = config.get('private_key_str') or ''
 
     def samlp_maker(self):
         return ElementMaker(
@@ -139,6 +146,15 @@ class Pysamlsp(object):
         with open(tempfile, 'w') as fh:
             fh.write(self.authnrequest_to_sign())
 
+        # If the private key string is passed in
+        # write it to a temp file so it can get processed
+        # normally.
+        if self.private_key_str:
+            tempkey = '/tmp/' + self.ID + '_pkey'
+            with open(tempkey, 'w') as fh:
+                fh.write(self.private_key_str)
+            self.private_key = tempkey
+
         signed = xmlsec1(
             '--sign',
             '--privkey-pem', self.private_key,
@@ -146,6 +162,11 @@ class Pysamlsp(object):
         )
 
         os.remove(tempfile)
+        try:
+            os.remove(tempkey)
+        except:
+            pass
+
         return signed.stdout
 
     def redirect_for_idp(self):
@@ -175,8 +196,18 @@ class Pysamlsp(object):
 
     def verify_signature(self, saml_response):
         tempfile = '/tmp/' + self.ID
+
         with open(tempfile, 'w') as fh:
             fh.write(base64.b64decode(saml_response).strip())
+
+        # If the certificate string is passed in
+        # write it to a temp file so it can get processed
+        # normally.
+        if self.certificate_str:
+            tempcert = '/tmp/' + self.ID + '_cert'
+            with open(tempcert, 'w') as fh:
+                fh.write(self.certificate_str)
+            self.certificate = tempcert
 
         try:
             verified = xmlsec1(
@@ -189,11 +220,16 @@ class Pysamlsp(object):
         except:
             raise
         finally:
-            pass
-            # os.remove(tempfile)
-        if not (verified.exit_code == 0 and
-                verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0):
-            raise SAMLValidationError('xmlsec1 error: %s' % verified.stderr)
+            if not (verified.exit_code == 0 and
+                    verified.stderr.find('SignedInfo References (ok/all): 1/1') > 0):
+                raise SAMLValidationError('xmlsec1 error: %s' % verified.stderr)
+
+            os.remove(tempfile)
+
+            try:
+                os.remove(tempcert)
+            except:
+                pass
 
     def user_is_valid(self, saml_response):
         response = etree.fromstring(base64.b64decode(saml_response).strip())
@@ -207,6 +243,7 @@ class Pysamlsp(object):
             )[0]
         except:
             raise SAMLNameIDError('NameID not given')
+
         try:
             condition = response.xpath(
                 '/samlp:Response/saml:Assertion/saml:Conditions',
