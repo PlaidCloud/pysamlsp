@@ -88,6 +88,44 @@ class Pysamlsp(object):
         self.private_key = config.get('private_key') or ''
         self.sign_authnrequests = config.get('sign_authnrequests') or False
         self.certificate = config.get('certificate') or ''
+        self.auth_context = config.get('auth_context') or 'PasswordProtectedTransport'
+        name_id_format = config.get('name_id_format')
+
+        if name_id_format == 'unspecified':
+            self.name_id = 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified'
+        elif name_id_format == 'emailAddress':
+            self.name_id = 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'
+        elif name_id_format == 'persistent':
+            self.name_id = 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'
+        elif name_id_format == 'transient':
+            self.name_id = 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient'
+        else:
+            self.name_id = None
+
+        valid_auth_contexts = (
+            'InternetProtocol',
+            'InternetProtocolPassword',
+            'Kerberos',
+            'MobileOneFactorUnregistered',
+            'MobileTwoFactorUnregistered',
+            'MobileOneFactorContract',
+            'MobileTwoFactorContract',
+            'Password',
+            'PasswordProtectedTransport',
+            'PreviousSession',
+            'X509',
+            'PGP',
+            'SPKI',
+            'XMLDSig',
+            'SmartcardPKI',
+            'SoftwarePKI',
+            'SecureRemotePassword',
+            'TLSClient',
+            'TimeSyncToken'
+        )
+
+        if self.auth_context not in valid_auth_contexts:
+            raise Exception('Invalid SAML Authentication Context Specified')
 
         # Allow specification of the private key and cert
         # as strings so they can be passed into the object
@@ -117,17 +155,19 @@ class Pysamlsp(object):
         )
 
         authn_request.append(self.saml_maker().Issuer(self.issuer))
-        authn_request.append(self.samlp_maker().NameIDPolicy(
-            allowcreate='true',
-            format='urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'
-        ))
+
+        if self.name_id is not None:
+            authn_request.append(self.samlp_maker().NameIDPolicy(
+                allowcreate='true',
+                format=self.name_id
+            ))
 
         requested_authn_context = self.samlp_maker().RequestedAuthnContext(
             Comparison="exact"
         )
 
         requested_authn_context_class_ref = \
-            self.saml_maker().AuthnContextClassRef('urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport')
+            self.saml_maker().AuthnContextClassRef('urn:oasis:names:tc:SAML:2.0:ac:classes:{}'.format(self.auth_context))
         requested_authn_context.append(requested_authn_context_class_ref)
         authn_request.append(requested_authn_context)
         return authn_request
