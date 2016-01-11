@@ -90,6 +90,7 @@ class Pysamlsp(object):
         self.certificate = config.get('certificate') or ''
         self.auth_context = config.get('auth_context') or 'PasswordProtectedTransport'
         name_id_format = config.get('name_id_format')
+        self.protocol_binding = config.get('protocol_binding') or 'HTTP-POST'
 
         if name_id_format == 'unspecified':
             self.name_id = 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified'
@@ -124,8 +125,20 @@ class Pysamlsp(object):
             'TimeSyncToken'
         )
 
+        valid_binding_protocols = (
+            'SOAP',
+            'PAOS',
+            'HTTP-REDIRECT',
+            'HTTP-POST',
+            'HTTP-Artifact',
+            'URI'
+        )
+
         if self.auth_context not in valid_auth_contexts:
             raise Exception('Invalid SAML Authentication Context Specified')
+
+        if self.protocol_binding not in valid_binding_protocols:
+            raise Exception('Invalid SAML Binding Protocol Specified')
 
         # Allow specification of the private key and cert
         # as strings so they can be passed into the object
@@ -146,8 +159,9 @@ class Pysamlsp(object):
         )
 
     def authnrequest(self):
+        binding_str = 'urn:oasis:names:tc:SAML:2.0:bindings:{}'.format(self.protocol_binding)
         authn_request = self.samlp_maker().AuthnRequest(
-            ProtocolBinding='urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+            ProtocolBinding=binding_str,
             Version='2.0',
             IssueInstant=iso_no_microseconds(datetime.utcnow()),
             ID=self.ID,
