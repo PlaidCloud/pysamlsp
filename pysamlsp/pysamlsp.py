@@ -36,7 +36,7 @@ def iso_no_microseconds(dt):
 
 
 def gzip_and_base64encode(data):
-    return base64.b64encode(zlib.compress(data))
+    return base64.b64encode(zlib.compress(data)[2:-4])
 
 
 def base64decode_and_gunzip(data):
